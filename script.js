@@ -406,16 +406,20 @@ function buildKnockout(allTables) {
 }
 
 function getWinnerFromMatch(match) {
-  const homeScore = document.querySelector(`[data-ko="${match.id}"][data-side="home"]`)?.value;
-  const awayScore = document.querySelector(`[data-ko="${match.id}"][data-side="away"]`)?.value;
-  const manualWinner = document.querySelector(`[data-winner="${match.id}"]`)?.value;
+  if (match.manualWinner) {
+    return match.manualWinner;
+  }
 
-  if (manualWinner) return manualWinner;
+  if (match.homeScore === "" || match.awayScore === "") {
+    return "";
+  }
 
-  if (homeScore === "" || awayScore === "") return "";
+  if (match.homeScore === undefined || match.awayScore === undefined) {
+    return "";
+  }
 
-  const h = Number(homeScore);
-  const a = Number(awayScore);
+  const h = Number(match.homeScore);
+  const a = Number(match.awayScore);
 
   if (h > a) return match.home.team;
   if (a > h) return match.away.team;
@@ -494,24 +498,53 @@ function createKnockoutMatch(match) {
 
     <div class="knockout-team-row">
       <div class="knockout-team-name">${teamLabel(homeTeam)}</div>
-      <input class="knockout-score" type="number" min="0" data-ko="${match.id}" data-side="home">
+      <input 
+        class="knockout-score" 
+        type="number" 
+        min="0" 
+        inputmode="numeric"
+        data-ko="${match.id}" 
+        data-side="home"
+        value="${match.homeScore || ""}">
     </div>
 
     <div class="knockout-team-row">
       <div class="knockout-team-name">${teamLabel(awayTeam)}</div>
-      <input class="knockout-score" type="number" min="0" data-ko="${match.id}" data-side="away">
+      <input 
+        class="knockout-score" 
+        type="number" 
+        min="0" 
+        inputmode="numeric"
+        data-ko="${match.id}" 
+        data-side="away"
+        value="${match.awayScore || ""}">
     </div>
 
     <select class="winner-select" data-winner="${match.id}">
       <option value="">Winner if draw / penalties</option>
-      <option value="${homeTeam}">${homeTeam}</option>
-      <option value="${awayTeam}">${awayTeam}</option>
+      <option value="${homeTeam}" ${match.manualWinner === homeTeam ? "selected" : ""}>${homeTeam}</option>
+      <option value="${awayTeam}" ${match.manualWinner === awayTeam ? "selected" : ""}>${awayTeam}</option>
     </select>
   `;
 
-  div.querySelectorAll("input, select").forEach(input => {
-    input.addEventListener("input", renderKnockout);
-    input.addEventListener("change", renderKnockout);
+  const homeInput = div.querySelector(`[data-ko="${match.id}"][data-side="home"]`);
+  const awayInput = div.querySelector(`[data-ko="${match.id}"][data-side="away"]`);
+  const winnerSelect = div.querySelector(`[data-winner="${match.id}"]`);
+
+  homeInput.addEventListener("input", () => {
+    match.homeScore = homeInput.value;
+  });
+
+  awayInput.addEventListener("input", () => {
+    match.awayScore = awayInput.value;
+  });
+
+  homeInput.addEventListener("change", renderKnockout);
+  awayInput.addEventListener("change", renderKnockout);
+
+  winnerSelect.addEventListener("change", () => {
+    match.manualWinner = winnerSelect.value;
+    renderKnockout();
   });
 
   return div;
@@ -557,18 +590,14 @@ function collectKnockout() {
   ];
 
   return allMatches.map(match => {
-    const homeScore = document.querySelector(`[data-ko="${match.id}"][data-side="home"]`)?.value || "";
-    const awayScore = document.querySelector(`[data-ko="${match.id}"][data-side="away"]`)?.value || "";
-    const winner = getWinnerFromMatch(match);
-
     return {
       round: match.round,
       label: match.label,
       homeTeam: match.home.team,
       awayTeam: match.away.team,
-      homeScore,
-      awayScore,
-      winner
+      homeScore: match.homeScore || "",
+      awayScore: match.awayScore || "",
+      winner: getWinnerFromMatch(match)
     };
   });
 }
