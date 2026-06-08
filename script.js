@@ -203,6 +203,44 @@ function createGroupCard(groupLetter, teams) {
   return card;
 }
 
+function makeLoserMatch(id, round, label, homeMatchId, awayMatchId) {
+  const homePrevious = findMatch(homeMatchId);
+  const awayPrevious = findMatch(awayMatchId);
+
+  const homeLoser = homePrevious ? getLoserFromMatch(homePrevious) : "";
+  const awayLoser = awayPrevious ? getLoserFromMatch(awayPrevious) : "";
+
+  const match = {
+    id,
+    round,
+    label,
+    home: homeLoser ? { team: homeLoser } : { team: "TBD" },
+    away: awayLoser ? { team: awayLoser } : { team: "TBD" },
+    winner: ""
+  };
+
+  return applySavedKnockoutData(match);
+}
+
+function makeLoserMatch(id, round, label, homeMatchId, awayMatchId) {
+  const homePrevious = findMatch(homeMatchId);
+  const awayPrevious = findMatch(awayMatchId);
+
+  const homeLoser = homePrevious ? getLoserFromMatch(homePrevious) : "";
+  const awayLoser = awayPrevious ? getLoserFromMatch(awayPrevious) : "";
+
+  const match = {
+    id,
+    round,
+    label,
+    home: homeLoser ? { team: homeLoser } : { team: "TBD" },
+    away: awayLoser ? { team: awayLoser } : { team: "TBD" },
+    winner: ""
+  };
+
+  return applySavedKnockoutData(match);
+}
+
 function renderGroups() {
   groupsContainer.innerHTML = "";
 
@@ -677,7 +715,7 @@ function renderKnockout() {
   ];
 
   knockoutRounds.third = [
-    makeMatch("m103", "third", "Match 103 - Third Place", "m101", "m102")
+    makeLoserMatch("m103", "third", "Match 103 - Third Place", "m101", "m102")
   ];
 
   knockoutRounds.final = [
