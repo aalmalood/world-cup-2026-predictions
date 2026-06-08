@@ -110,9 +110,28 @@ function applySavedKnockoutData(match) {
 }
 
 function teamLabel(team) {
+  const code = flagCodes[team];
+
+  if (!team || team === "TBD") {
+    return `
+      <span class="team-with-flag">
+        <span class="flag-placeholder"></span>
+        <span>TBD</span>
+      </span>
+    `;
+  }
+
+  const flagUrl = code
+    ? `https://flagcdn.com/w40/${code}.png`
+    : "";
+
   return `
     <span class="team-with-flag">
-      <span class="flag">${flags[team] || "🏳️"}</span>
+      ${
+        flagUrl
+          ? `<img class="flag-img" src="${flagUrl}" alt="${team} flag">`
+          : `<span class="flag-placeholder"></span>`
+      }
       <span>${team}</span>
     </span>
   `;
