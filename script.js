@@ -13,6 +13,57 @@ const groups = {
   L: ["England", "Croatia", "Ghana", "Panama"]
 };
 
+const flags = {
+  "Mexico": "🇲🇽",
+  "Czech Republic": "🇨🇿",
+  "South Africa": "🇿🇦",
+  "South Korea": "🇰🇷",
+  "Canada": "🇨🇦",
+  "Bosnia and Herzegovina": "🇧🇦",
+  "Qatar": "🇶🇦",
+  "Switzerland": "🇨🇭",
+  "Brazil": "🇧🇷",
+  "Haiti": "🇭🇹",
+  "Morocco": "🇲🇦",
+  "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "United States": "🇺🇸",
+  "Australia": "🇦🇺",
+  "Paraguay": "🇵🇾",
+  "Türkiye": "🇹🇷",
+  "Germany": "🇩🇪",
+  "Curaçao": "🇨🇼",
+  "Ivory Coast": "🇨🇮",
+  "Ecuador": "🇪🇨",
+  "Netherlands": "🇳🇱",
+  "Japan": "🇯🇵",
+  "Sweden": "🇸🇪",
+  "Tunisia": "🇹🇳",
+  "Belgium": "🇧🇪",
+  "Egypt": "🇪🇬",
+  "Iran": "🇮🇷",
+  "New Zealand": "🇳🇿",
+  "Spain": "🇪🇸",
+  "Cabo Verde": "🇨🇻",
+  "Saudi Arabia": "🇸🇦",
+  "Uruguay": "🇺🇾",
+  "France": "🇫🇷",
+  "Norway": "🇳🇴",
+  "Senegal": "🇸🇳",
+  "Iraq": "🇮🇶",
+  "Argentina": "🇦🇷",
+  "Algeria": "🇩🇿",
+  "Austria": "🇦🇹",
+  "Jordan": "🇯🇴",
+  "Portugal": "🇵🇹",
+  "DR Congo": "🇨🇩",
+  "Uzbekistan": "🇺🇿",
+  "Colombia": "🇨🇴",
+  "England": "🏴",
+  "Croatia": "🇭🇷",
+  "Ghana": "🇬🇭",
+  "Panama": "🇵🇦"
+};
+
 const fixtureOrder = [
   [0, 1],
   [2, 3],
@@ -24,7 +75,25 @@ const fixtureOrder = [
 
 const groupsContainer = document.getElementById("groupsContainer");
 const qualifiedContainer = document.getElementById("qualifiedContainer");
+const knockoutContainer = document.getElementById("knockoutContainer");
 const resultBox = document.getElementById("resultBox");
+
+let knockoutRounds = {
+  r32: [],
+  r16: [],
+  qf: [],
+  sf: [],
+  final: []
+};
+
+function teamLabel(team) {
+  return `
+    <span class="team-with-flag">
+      <span class="flag">${flags[team] || "🏳️"}</span>
+      <span>${team}</span>
+    </span>
+  `;
+}
 
 function createGroupCard(groupLetter, teams) {
   const card = document.createElement("div");
@@ -45,7 +114,7 @@ function createGroupCard(groupLetter, teams) {
     row.className = "match-row";
 
     row.innerHTML = `
-      <div class="team-left">${teamA}</div>
+      <div class="team-left">${teamLabel(teamA)}</div>
       <input class="score-input" type="number" min="0"
         data-group="${groupLetter}"
         data-match="${matchIndex}"
@@ -57,7 +126,7 @@ function createGroupCard(groupLetter, teams) {
         data-match="${matchIndex}"
         data-team="${teamB}"
         data-side="away">
-      <div class="team-right">${teamB}</div>
+      <div class="team-right">${teamLabel(teamB)}</div>
     `;
 
     body.appendChild(row);
@@ -106,9 +175,10 @@ function renderGroups() {
   calculateAll();
 }
 
-function emptyStats(team) {
+function emptyStats(team, groupLetter) {
   return {
     team,
+    group: groupLetter,
     played: 0,
     wins: 0,
     draws: 0,
@@ -116,7 +186,8 @@ function emptyStats(team) {
     gf: 0,
     ga: 0,
     gd: 0,
-    points: 0
+    points: 0,
+    position: 0
   };
 }
 
@@ -125,7 +196,7 @@ function calculateGroup(groupLetter) {
   const stats = {};
 
   teamsInGroup.forEach(team => {
-    stats[team] = emptyStats(team);
+    stats[team] = emptyStats(team, groupLetter);
   });
 
   fixtureOrder.forEach((pair, matchIndex) => {
@@ -140,7 +211,7 @@ function calculateGroup(groupLetter) {
       `input[data-group="${groupLetter}"][data-match="${matchIndex}"][data-side="away"]`
     );
 
-    if (!homeInput.value || !awayInput.value) {
+    if (homeInput.value === "" || awayInput.value === "") {
       return;
     }
 
@@ -182,6 +253,10 @@ function calculateGroup(groupLetter) {
     return a.team.localeCompare(b.team);
   });
 
+  table.forEach((row, index) => {
+    row.position = index + 1;
+  });
+
   return table;
 }
 
@@ -193,7 +268,7 @@ function updateGroupTable(groupLetter, table) {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td>${index + 1}. ${row.team}</td>
+      <td>${index + 1}. ${teamLabel(row.team)}</td>
       <td>${row.played}</td>
       <td>${row.wins}</td>
       <td>${row.draws}</td>
@@ -211,6 +286,7 @@ function updateGroupTable(groupLetter, table) {
 function calculateAll() {
   const qualified = {};
   const allTables = {};
+  const allTeamsRanked = [];
 
   Object.keys(groups).forEach(groupLetter => {
     const table = calculateGroup(groupLetter);
@@ -219,29 +295,225 @@ function calculateAll() {
 
     qualified[groupLetter] = {
       first: table[0]?.team || "",
-      second: table[1]?.team || ""
+      second: table[1]?.team || "",
+      third: table[2]?.team || ""
     };
+
+    table.forEach(team => allTeamsRanked.push(team));
   });
 
-  renderQualified(qualified);
-  return { qualified, allTables };
+  renderQualified(qualified, allTables);
+  buildKnockout(allTables);
+
+  return { qualified, allTables, knockoutRounds };
 }
 
-function renderQualified(qualified) {
+function renderQualified(qualified, allTables) {
   qualifiedContainer.innerHTML = "";
+
+  const thirdPlaceTeams = Object.values(allTables)
+    .map(table => table[2])
+    .sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      return a.team.localeCompare(b.team);
+    })
+    .slice(0, 8)
+    .map(row => row.team);
 
   Object.entries(qualified).forEach(([groupLetter, result]) => {
     const div = document.createElement("div");
     div.className = "qualified-item";
 
+    const thirdStatus = thirdPlaceTeams.includes(result.third)
+      ? `${teamLabel(result.third)}`
+      : "-";
+
     div.innerHTML = `
       <strong>Group ${groupLetter}</strong>
-      1st: ${result.first || "-"}<br>
-      2nd: ${result.second || "-"}
+      1st: ${teamLabel(result.first)}<br>
+      2nd: ${teamLabel(result.second)}<br>
+      Best 3rd: ${thirdStatus}
     `;
 
     qualifiedContainer.appendChild(div);
   });
+}
+
+function getQualifiedTeams(allTables) {
+  const groupWinners = [];
+  const runnersUp = [];
+  const thirdPlaceTeams = [];
+
+  Object.values(allTables).forEach(table => {
+    groupWinners.push(table[0]);
+    runnersUp.push(table[1]);
+    thirdPlaceTeams.push(table[2]);
+  });
+
+  const bestThirds = thirdPlaceTeams
+    .sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      if (b.gf !== a.gf) return b.gf - a.gf;
+      return a.team.localeCompare(b.team);
+    })
+    .slice(0, 8);
+
+  const seededTeams = [...groupWinners, ...runnersUp, ...bestThirds];
+
+  seededTeams.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.gd !== a.gd) return b.gd - a.gd;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return a.team.localeCompare(b.team);
+  });
+
+  return seededTeams.map((item, index) => ({
+    seed: index + 1,
+    team: item.team,
+    group: item.group,
+    points: item.points,
+    gd: item.gd,
+    gf: item.gf
+  }));
+}
+
+function buildKnockout(allTables) {
+  const qualifiedTeams = getQualifiedTeams(allTables);
+
+  if (qualifiedTeams.length < 32) {
+    knockoutContainer.innerHTML = "<p>Enter all group scores to generate the knockout stage.</p>";
+    return;
+  }
+
+  knockoutRounds.r32 = [];
+
+  for (let i = 0; i < 16; i++) {
+    knockoutRounds.r32.push({
+      id: `r32-${i}`,
+      round: "r32",
+      label: `Match ${i + 1}`,
+      home: qualifiedTeams[i],
+      away: qualifiedTeams[31 - i],
+      winner: ""
+    });
+  }
+
+  renderKnockout();
+}
+
+function getWinnerFromMatch(match) {
+  const homeScore = document.querySelector(`[data-ko="${match.id}"][data-side="home"]`)?.value;
+  const awayScore = document.querySelector(`[data-ko="${match.id}"][data-side="away"]`)?.value;
+  const manualWinner = document.querySelector(`[data-winner="${match.id}"]`)?.value;
+
+  if (manualWinner) return manualWinner;
+
+  if (homeScore === "" || awayScore === "") return "";
+
+  const h = Number(homeScore);
+  const a = Number(awayScore);
+
+  if (h > a) return match.home.team;
+  if (a > h) return match.away.team;
+
+  return "";
+}
+
+function createNextRound(previousRound, roundName, roundLabel) {
+  const nextRound = [];
+
+  for (let i = 0; i < previousRound.length; i += 2) {
+    const winnerA = getWinnerFromMatch(previousRound[i]);
+    const winnerB = getWinnerFromMatch(previousRound[i + 1]);
+
+    nextRound.push({
+      id: `${roundName}-${i / 2}`,
+      round: roundName,
+      label: `${roundLabel} ${i / 2 + 1}`,
+      home: winnerA ? { team: winnerA } : { team: "TBD" },
+      away: winnerB ? { team: winnerB } : { team: "TBD" },
+      winner: ""
+    });
+  }
+
+  return nextRound;
+}
+
+function renderKnockout() {
+  knockoutContainer.innerHTML = "";
+
+  knockoutRounds.r16 = createNextRound(knockoutRounds.r32, "r16", "R16");
+  knockoutRounds.qf = createNextRound(knockoutRounds.r16, "qf", "QF");
+  knockoutRounds.sf = createNextRound(knockoutRounds.qf, "sf", "SF");
+  knockoutRounds.final = createNextRound(knockoutRounds.sf, "final", "Final");
+
+  const rounds = [
+    { key: "r32", title: "Round of 32" },
+    { key: "r16", title: "Round of 16" },
+    { key: "qf", title: "Quarterfinals" },
+    { key: "sf", title: "Semifinals" },
+    { key: "final", title: "Final" }
+  ];
+
+  rounds.forEach(round => {
+    const column = document.createElement("div");
+    column.className = "round-column";
+    column.innerHTML = `<h3>${round.title}</h3>`;
+
+    knockoutRounds[round.key].forEach(match => {
+      column.appendChild(createKnockoutMatch(match));
+    });
+
+    knockoutContainer.appendChild(column);
+  });
+
+  const finalMatch = knockoutRounds.final[0];
+  const champion = finalMatch ? getWinnerFromMatch(finalMatch) : "";
+
+  if (champion) {
+    const championBox = document.createElement("div");
+    championBox.className = "champion-box";
+    championBox.innerHTML = `🏆 Champion: ${teamLabel(champion)}`;
+    knockoutContainer.appendChild(championBox);
+  }
+}
+
+function createKnockoutMatch(match) {
+  const div = document.createElement("div");
+  div.className = "knockout-match";
+
+  const homeTeam = match.home?.team || "TBD";
+  const awayTeam = match.away?.team || "TBD";
+
+  div.innerHTML = `
+    <div class="knockout-match-title">${match.label}</div>
+
+    <div class="knockout-team-row">
+      <div class="knockout-team-name">${teamLabel(homeTeam)}</div>
+      <input class="knockout-score" type="number" min="0" data-ko="${match.id}" data-side="home">
+    </div>
+
+    <div class="knockout-team-row">
+      <div class="knockout-team-name">${teamLabel(awayTeam)}</div>
+      <input class="knockout-score" type="number" min="0" data-ko="${match.id}" data-side="away">
+    </div>
+
+    <select class="winner-select" data-winner="${match.id}">
+      <option value="">Winner if draw / penalties</option>
+      <option value="${homeTeam}">${homeTeam}</option>
+      <option value="${awayTeam}">${awayTeam}</option>
+    </select>
+  `;
+
+  div.querySelectorAll("input, select").forEach(input => {
+    input.addEventListener("input", renderKnockout);
+    input.addEventListener("change", renderKnockout);
+  });
+
+  return div;
 }
 
 function collectScores() {
@@ -274,6 +546,32 @@ function collectScores() {
   return scores;
 }
 
+function collectKnockout() {
+  const allMatches = [
+    ...knockoutRounds.r32,
+    ...knockoutRounds.r16,
+    ...knockoutRounds.qf,
+    ...knockoutRounds.sf,
+    ...knockoutRounds.final
+  ];
+
+  return allMatches.map(match => {
+    const homeScore = document.querySelector(`[data-ko="${match.id}"][data-side="home"]`)?.value || "";
+    const awayScore = document.querySelector(`[data-ko="${match.id}"][data-side="away"]`)?.value || "";
+    const winner = getWinnerFromMatch(match);
+
+    return {
+      round: match.round,
+      label: match.label,
+      homeTeam: match.home.team,
+      awayTeam: match.away.team,
+      homeScore,
+      awayScore,
+      winner
+    };
+  });
+}
+
 function saveLocally() {
   const playerName = document.getElementById("playerName").value.trim();
 
@@ -287,9 +585,10 @@ function saveLocally() {
   const prediction = {
     playerName,
     submittedAt: new Date().toISOString(),
-    scores: collectScores(),
+    groupScores: collectScores(),
     qualified: calculation.qualified,
-    tables: calculation.allTables
+    tables: calculation.allTables,
+    knockout: collectKnockout()
   };
 
   localStorage.setItem("worldCup2026Prediction", JSON.stringify(prediction, null, 2));
@@ -303,8 +602,12 @@ function resetAll() {
   const confirmReset = confirm("Are you sure you want to clear all scores?");
   if (!confirmReset) return;
 
-  document.querySelectorAll(".score-input").forEach(input => {
+  document.querySelectorAll(".score-input, .knockout-score").forEach(input => {
     input.value = "";
+  });
+
+  document.querySelectorAll(".winner-select").forEach(select => {
+    select.value = "";
   });
 
   document.getElementById("playerName").value = "";
