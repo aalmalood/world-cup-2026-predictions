@@ -87,6 +87,27 @@ let knockoutRounds = {
   final: []
 };
 
+let knockoutMemory = {};
+
+function saveKnockoutValue(matchId, field, value) {
+  if (!knockoutMemory[matchId]) {
+    knockoutMemory[matchId] = {};
+  }
+
+  knockoutMemory[matchId][field] = value;
+}
+
+function applySavedKnockoutData(match) {
+  const saved = knockoutMemory[match.id] || {};
+
+  return {
+    ...match,
+    homeScore: saved.homeScore || "",
+    awayScore: saved.awayScore || "",
+    manualWinner: saved.manualWinner || ""
+  };
+}
+
 function teamLabel(team) {
   return `
     <span class="team-with-flag">
@@ -392,14 +413,16 @@ function buildKnockout(allTables) {
   knockoutRounds.r32 = [];
 
   for (let i = 0; i < 16; i++) {
-    knockoutRounds.r32.push({
+    const match = {
       id: `r32-${i}`,
       round: "r32",
       label: `Match ${i + 1}`,
       home: qualifiedTeams[i],
       away: qualifiedTeams[31 - i],
       winner: ""
-    });
+    };
+
+    knockoutRounds.r32.push(applySavedKnockoutData(match));
   }
 
   renderKnockout();
@@ -434,14 +457,16 @@ function createNextRound(previousRound, roundName, roundLabel) {
     const winnerA = getWinnerFromMatch(previousRound[i]);
     const winnerB = getWinnerFromMatch(previousRound[i + 1]);
 
-    nextRound.push({
+    const match = {
       id: `${roundName}-${i / 2}`,
       round: roundName,
       label: `${roundLabel} ${i / 2 + 1}`,
       home: winnerA ? { team: winnerA } : { team: "TBD" },
       away: winnerB ? { team: winnerB } : { team: "TBD" },
       winner: ""
-    });
+    };
+
+    nextRound.push(applySavedKnockoutData(match));
   }
 
   return nextRound;
@@ -533,17 +558,20 @@ function createKnockoutMatch(match) {
 
   homeInput.addEventListener("input", () => {
     match.homeScore = homeInput.value;
+    saveKnockoutValue(match.id, "homeScore", homeInput.value);
   });
 
   awayInput.addEventListener("input", () => {
     match.awayScore = awayInput.value;
+    saveKnockoutValue(match.id, "awayScore", awayInput.value);
   });
 
-  homeInput.addEventListener("change", renderKnockout);
-  awayInput.addEventListener("change", renderKnockout);
+  homeInput.addEventListener("blur", renderKnockout);
+  awayInput.addEventListener("blur", renderKnockout);
 
   winnerSelect.addEventListener("change", () => {
     match.manualWinner = winnerSelect.value;
+    saveKnockoutValue(match.id, "manualWinner", winnerSelect.value);
     renderKnockout();
   });
 
@@ -635,6 +663,7 @@ function resetAll() {
   document.querySelectorAll(".score-input, .knockout-score").forEach(input => {
     input.value = "";
   });
+  
 
   document.querySelectorAll(".winner-select").forEach(select => {
     select.value = "";
@@ -643,7 +672,7 @@ function resetAll() {
   document.getElementById("playerName").value = "";
   localStorage.removeItem("worldCup2026Prediction");
   resultBox.textContent = "No result yet.";
-
+  knockoutMemory = {};
   calculateAll();
 }
 
