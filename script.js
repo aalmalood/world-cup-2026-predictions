@@ -77,6 +77,7 @@ const groupsContainer = document.getElementById("groupsContainer");
 const qualifiedContainer = document.getElementById("qualifiedContainer");
 const knockoutContainer = document.getElementById("knockoutContainer");
 const resultBox = document.getElementById("resultBox");
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6bI2BMlRjOEvN3Sx4PShcB8yY_ISoRPL0W6fQPc-kP6zyuHIzYWCG5g_Ge1VbdpHsoQ/exec";
 
 let knockoutRounds = {
   r32: [],
@@ -617,8 +618,66 @@ function resetAll() {
   calculateAll();
 }
 
+function getChampionName() {
+  const finalMatch = knockoutRounds.final?.[0];
+
+  if (!finalMatch) {
+    return "";
+  }
+
+  return getWinnerFromMatch(finalMatch) || "";
+}
+
+async function submitToGoogleSheets() {
+  const playerName = document.getElementById("playerName").value.trim();
+
+  if (!playerName) {
+    alert("Please enter your name first.");
+    return;
+  }
+
+  const calculation = calculateAll();
+
+  const prediction = {
+    playerName,
+    submittedAt: new Date().toISOString(),
+    champion: getChampionName(),
+    groupScores: collectScores(),
+    qualified: calculation.qualified,
+    tables: calculation.allTables,
+    knockout: collectKnockout()
+  };
+
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(prediction)
+    });
+
+    localStorage.setItem(
+      "worldCup2026Prediction",
+      JSON.stringify(prediction, null, 2)
+    );
+
+    resultBox.textContent = JSON.stringify(prediction, null, 2);
+
+    alert("Prediction submitted. Check your Google Sheet.");
+
+  } catch (error) {
+    console.error(error);
+    alert("Submission failed. Please check the Apps Script URL.");
+  }
+}
+
+
 document.getElementById("calculateBtn").addEventListener("click", calculateAll);
 document.getElementById("saveBtn").addEventListener("click", saveLocally);
+document.getElementById("submitBtn").addEventListener("click", submitToGoogleSheets);
 document.getElementById("resetBtn").addEventListener("click", resetAll);
 
 renderGroups();
+
