@@ -13,7 +13,7 @@ const groups = {
   L: ["England", "Croatia", "Ghana", "Panama"]
 };
 
-const flags = {
+const flagCodes  = {
   "Mexico": "🇲🇽",
   "Czech Republic": "🇨🇿",
   "South Africa": "🇿🇦",
