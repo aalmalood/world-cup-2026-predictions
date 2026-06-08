@@ -84,6 +84,7 @@ let knockoutRounds = {
   r16: [],
   qf: [],
   sf: [],
+  third: [],
   final: []
 };
 
@@ -364,17 +365,24 @@ function renderQualified(qualified, allTables) {
 }
 
 function getQualifiedTeams(allTables) {
-  const groupWinners = [];
-  const runnersUp = [];
-  const thirdPlaceTeams = [];
+  const qualified = {
+    winners: {},
+    runnersUp: {},
+    thirds: {},
+    bestThirdGroups: []
+  };
 
-  Object.values(allTables).forEach(table => {
-    groupWinners.push(table[0]);
-    runnersUp.push(table[1]);
-    thirdPlaceTeams.push(table[2]);
+  Object.entries(allTables).forEach(([groupLetter, table]) => {
+    qualified.winners[groupLetter] = table[0];
+    qualified.runnersUp[groupLetter] = table[1];
+    qualified.thirds[groupLetter] = table[2];
   });
 
-  const bestThirds = thirdPlaceTeams
+  const bestThirds = Object.entries(qualified.thirds)
+    .map(([groupLetter, team]) => ({
+      ...team,
+      group: groupLetter
+    }))
     .sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       if (b.gd !== a.gd) return b.gd - a.gd;
@@ -383,47 +391,166 @@ function getQualifiedTeams(allTables) {
     })
     .slice(0, 8);
 
-  const seededTeams = [...groupWinners, ...runnersUp, ...bestThirds];
+  qualified.bestThirdGroups = bestThirds.map(team => team.group);
 
-  seededTeams.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (b.gd !== a.gd) return b.gd - a.gd;
-    if (b.gf !== a.gf) return b.gf - a.gf;
-    return a.team.localeCompare(b.team);
-  });
-
-  return seededTeams.map((item, index) => ({
-    seed: index + 1,
-    team: item.team,
-    group: item.group,
-    points: item.points,
-    gd: item.gd,
-    gf: item.gf
-  }));
+  return qualified;
 }
 
+function assignThirdPlaceTeams(qualified) {
+  const usedThirdGroups = new Set();
+
+  function pickThird(allowedGroups) {
+    const candidates = allowedGroups
+      .filter(groupLetter => qualified.bestThirdGroups.includes(groupLetter))
+      .filter(groupLetter => !usedThirdGroups.has(groupLetter))
+      .map(groupLetter => qualified.thirds[groupLetter])
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.gd !== a.gd) return b.gd - a.gd;
+        if (b.gf !== a.gf) return b.gf - a.gf;
+        return a.team.localeCompare(b.team);
+      });
+
+    const selected = candidates[0];
+
+    if (!selected) {
+      return { team: "TBD" };
+    }
+
+    usedThirdGroups.add(selected.group);
+    return selected;
+  }
+
+  return { pickThird };
+}
+
+
 function buildKnockout(allTables) {
-  const qualifiedTeams = getQualifiedTeams(allTables);
+  const qualified = getQualifiedTeams(allTables);
+  const thirdPicker = assignThirdPlaceTeams(qualified);
 
-  if (qualifiedTeams.length < 32) {
-    knockoutContainer.innerHTML = "<p>Enter all group scores to generate the knockout stage.</p>";
-    return;
+  function W(groupLetter) {
+    return qualified.winners[groupLetter] || { team: "TBD" };
   }
 
-  knockoutRounds.r32 = [];
+  function R(groupLetter) {
+    return qualified.runnersUp[groupLetter] || { team: "TBD" };
+  }
 
-  for (let i = 0; i < 16; i++) {
-    const match = {
-      id: `r32-${i}`,
+  function T(allowedGroups) {
+    return thirdPicker.pickThird(allowedGroups);
+  }
+
+  const officialRoundOf32 = [
+    {
+      id: "m73",
+      label: "Match 73",
+      home: R("A"),
+      away: R("B")
+    },
+    {
+      id: "m74",
+      label: "Match 74",
+      home: W("E"),
+      away: T(["A", "B", "C", "D", "F"])
+    },
+    {
+      id: "m75",
+      label: "Match 75",
+      home: W("F"),
+      away: R("C")
+    },
+    {
+      id: "m76",
+      label: "Match 76",
+      home: W("C"),
+      away: R("F")
+    },
+    {
+      id: "m77",
+      label: "Match 77",
+      home: W("I"),
+      away: T(["C", "D", "F", "G", "H"])
+    },
+    {
+      id: "m78",
+      label: "Match 78",
+      home: R("E"),
+      away: R("I")
+    },
+    {
+      id: "m79",
+      label: "Match 79",
+      home: W("A"),
+      away: T(["C", "E", "F", "H", "I"])
+    },
+    {
+      id: "m80",
+      label: "Match 80",
+      home: W("L"),
+      away: T(["E", "H", "I", "J", "K"])
+    },
+    {
+      id: "m81",
+      label: "Match 81",
+      home: W("D"),
+      away: T(["B", "E", "F", "I", "J"])
+    },
+    {
+      id: "m82",
+      label: "Match 82",
+      home: W("G"),
+      away: T(["A", "E", "H", "I", "J"])
+    },
+    {
+      id: "m83",
+      label: "Match 83",
+      home: R("K"),
+      away: R("L")
+    },
+    {
+      id: "m84",
+      label: "Match 84",
+      home: W("H"),
+      away: R("J")
+    },
+    {
+      id: "m85",
+      label: "Match 85",
+      home: W("B"),
+      away: T(["E", "F", "G", "I", "J"])
+    },
+    {
+      id: "m86",
+      label: "Match 86",
+      home: W("J"),
+      away: R("H")
+    },
+    {
+      id: "m87",
+      label: "Match 87",
+      home: W("K"),
+      away: T(["D", "E", "I", "J", "L"])
+    },
+    {
+      id: "m88",
+      label: "Match 88",
+      home: R("D"),
+      away: R("G")
+    }
+  ];
+
+  knockoutRounds.r32 = officialRoundOf32.map(match => {
+    return applySavedKnockoutData({
+      id: match.id,
       round: "r32",
-      label: `Match ${i + 1}`,
-      home: qualifiedTeams[i],
-      away: qualifiedTeams[31 - i],
+      label: match.label,
+      home: match.home,
+      away: match.away,
       winner: ""
-    };
-
-    knockoutRounds.r32.push(applySavedKnockoutData(match));
-  }
+    });
+  });
 
   renderKnockout();
 }
@@ -472,19 +599,77 @@ function createNextRound(previousRound, roundName, roundLabel) {
   return nextRound;
 }
 
+function findMatch(matchId) {
+  const allMatches = [
+    ...knockoutRounds.r32,
+    ...knockoutRounds.r16,
+    ...knockoutRounds.qf,
+    ...knockoutRounds.sf,
+    ...knockoutRounds.final
+  ];
+
+  return allMatches.find(match => match.id === matchId);
+}
+
+function makeMatch(id, round, label, homeMatchId, awayMatchId) {
+  const homePrevious = findMatch(homeMatchId);
+  const awayPrevious = findMatch(awayMatchId);
+
+  const homeWinner = homePrevious ? getWinnerFromMatch(homePrevious) : "";
+  const awayWinner = awayPrevious ? getWinnerFromMatch(awayPrevious) : "";
+
+  const match = {
+    id,
+    round,
+    label,
+    home: homeWinner ? { team: homeWinner } : { team: "TBD" },
+    away: awayWinner ? { team: awayWinner } : { team: "TBD" },
+    winner: ""
+  };
+
+  return applySavedKnockoutData(match);
+}
+
 function renderKnockout() {
   knockoutContainer.innerHTML = "";
 
-  knockoutRounds.r16 = createNextRound(knockoutRounds.r32, "r16", "R16");
-  knockoutRounds.qf = createNextRound(knockoutRounds.r16, "qf", "QF");
-  knockoutRounds.sf = createNextRound(knockoutRounds.qf, "sf", "SF");
-  knockoutRounds.final = createNextRound(knockoutRounds.sf, "final", "Final");
+  knockoutRounds.r16 = [
+    makeMatch("m89", "r16", "Match 89", "m73", "m75"),
+    makeMatch("m90", "r16", "Match 90", "m74", "m77"),
+    makeMatch("m91", "r16", "Match 91", "m76", "m78"),
+    makeMatch("m92", "r16", "Match 92", "m79", "m80"),
+    makeMatch("m93", "r16", "Match 93", "m83", "m84"),
+    makeMatch("m94", "r16", "Match 94", "m81", "m82"),
+    makeMatch("m95", "r16", "Match 95", "m86", "m88"),
+    makeMatch("m96", "r16", "Match 96", "m85", "m87")
+  ];
+
+  knockoutRounds.qf = [
+    makeMatch("m97", "qf", "Match 97", "m89", "m90"),
+    makeMatch("m98", "qf", "Match 98", "m93", "m94"),
+    makeMatch("m99", "qf", "Match 99", "m91", "m92"),
+    makeMatch("m100", "qf", "Match 100", "m95", "m96")
+  ];
+
+  knockoutRounds.sf = [
+    makeMatch("m101", "sf", "Match 101", "m97", "m98"),
+    makeMatch("m102", "sf", "Match 102", "m99", "m100")
+  ];
+
+  knockoutRounds.third = [
+    makeMatch("m103", "third", "Match 103 - Third Place", "m101", "m102")
+  ];
+
+  knockoutRounds.final = [
+    makeMatch("m104", "final", "Match 104 - Final", "m101", "m102")
+  ];
 
   const rounds = [
     { key: "r32", title: "Round of 32" },
     { key: "r16", title: "Round of 16" },
     { key: "qf", title: "Quarterfinals" },
     { key: "sf", title: "Semifinals" },
+    { key: "third", title: "Third Place" },
     { key: "final", title: "Final" }
   ];
 
@@ -614,6 +799,7 @@ function collectKnockout() {
     ...knockoutRounds.r16,
     ...knockoutRounds.qf,
     ...knockoutRounds.sf,
+    ...knockoutRounds.third,
     ...knockoutRounds.final
   ];
 
