@@ -58,7 +58,7 @@ const flags = {
   "DR Congo": "🇨🇩",
   "Uzbekistan": "🇺🇿",
   "Colombia": "🇨🇴",
-  "England": "🏴",
+  "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
   "Croatia": "🇭🇷",
   "Ghana": "🇬🇭",
   "Panama": "🇵🇦"
