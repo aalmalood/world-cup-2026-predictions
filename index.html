@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Cup 2026 Predictions</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-content">
+      <h1>World Cup 2026 Predictions</h1>
+      <p>Predict the group stage, see who qualifies, and build your knockout path.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card player-card">
+      <h2>Your Prediction</h2>
+      <label for="playerName">Your name</label>
+      <input id="playerName" type="text" placeholder="Example: Abdulla" />
+    </section>
+
+    <section class="section-title">
+      <h2>Group Stage</h2>
+      <p>Enter scores for each match. The table will update automatically.</p>
+    </section>
+
+    <section id="groupsContainer" class="groups-grid"></section>
+
+    <section class="card">
+      <h2>Qualified Teams</h2>
+      <div id="qualifiedContainer" class="qualified-grid"></div>
+    </section>
+
+    <section class="actions">
+      <button id="calculateBtn">Calculate Predictions</button>
+      <button id="saveBtn">Save Locally</button>
+      <button id="resetBtn" class="secondary">Reset</button>
+    </section>
+
+    <section class="card">
+      <h2>Saved Result</h2>
+      <pre id="resultBox">No result yet.</pre>
+    </section>
+  </main>
+
+  <footer>
+    <p>Fan-made World Cup 2026 prediction activity.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
