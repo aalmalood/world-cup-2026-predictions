@@ -203,24 +203,6 @@ function createGroupCard(groupLetter, teams) {
   return card;
 }
 
-function makeLoserMatch(id, round, label, homeMatchId, awayMatchId) {
-  const homePrevious = findMatch(homeMatchId);
-  const awayPrevious = findMatch(awayMatchId);
-
-  const homeLoser = homePrevious ? getLoserFromMatch(homePrevious) : "";
-  const awayLoser = awayPrevious ? getLoserFromMatch(awayPrevious) : "";
-
-  const match = {
-    id,
-    round,
-    label,
-    home: homeLoser ? { team: homeLoser } : { team: "TBD" },
-    away: awayLoser ? { team: awayLoser } : { team: "TBD" },
-    winner: ""
-  };
-
-  return applySavedKnockoutData(match);
-}
 
 function makeLoserMatch(id, round, label, homeMatchId, awayMatchId) {
   const homePrevious = findMatch(homeMatchId);
@@ -1000,6 +982,8 @@ document.getElementById("calculateBtn").addEventListener("click", calculateAll);
 document.getElementById("saveBtn").addEventListener("click", saveLocally);
 document.getElementById("submitBtn").addEventListener("click", submitToGoogleSheets);
 document.getElementById("resetBtn").addEventListener("click", resetAll);
+
+document.getElementById("updateKnockoutBtn").addEventListener("click", renderKnockout);
 
 renderGroups();
 
