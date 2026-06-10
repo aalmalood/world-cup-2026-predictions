@@ -657,6 +657,27 @@ function createNextRound(previousRound, roundName, roundLabel) {
   return nextRound;
 }
 
+function getLoserFromMatch(match) {
+  const winner = getWinnerFromMatch(match);
+
+  if (!winner) {
+    return "";
+  }
+
+  const homeTeam = match.home?.team || "TBD";
+  const awayTeam = match.away?.team || "TBD";
+
+  if (winner === homeTeam) {
+    return awayTeam;
+  }
+
+  if (winner === awayTeam) {
+    return homeTeam;
+  }
+
+  return "";
+}
+
 function findMatch(matchId) {
   const allMatches = [
     ...knockoutRounds.r32,
@@ -768,9 +789,9 @@ function createKnockoutMatch(match) {
       <div class="knockout-team-name">${teamLabel(homeTeam)}</div>
       <input 
         class="knockout-score" 
-        type="number" 
-        min="0" 
+        type="text" 
         inputmode="numeric"
+        pattern="[0-9]*"
         data-ko="${match.id}" 
         data-side="home"
         value="${match.homeScore || ""}">
@@ -780,9 +801,9 @@ function createKnockoutMatch(match) {
       <div class="knockout-team-name">${teamLabel(awayTeam)}</div>
       <input 
         class="knockout-score" 
-        type="number" 
-        min="0" 
+        type="text" 
         inputmode="numeric"
+        pattern="[0-9]*"
         data-ko="${match.id}" 
         data-side="away"
         value="${match.awayScore || ""}">
@@ -800,17 +821,16 @@ function createKnockoutMatch(match) {
   const winnerSelect = div.querySelector(`[data-winner="${match.id}"]`);
 
   homeInput.addEventListener("input", () => {
+    homeInput.value = homeInput.value.replace(/\D/g, "");
     match.homeScore = homeInput.value;
     saveKnockoutValue(match.id, "homeScore", homeInput.value);
   });
 
   awayInput.addEventListener("input", () => {
+    awayInput.value = awayInput.value.replace(/\D/g, "");
     match.awayScore = awayInput.value;
     saveKnockoutValue(match.id, "awayScore", awayInput.value);
   });
-
-  homeInput.addEventListener("blur", renderKnockout);
-  awayInput.addEventListener("blur", renderKnockout);
 
   winnerSelect.addEventListener("change", () => {
     match.manualWinner = winnerSelect.value;
