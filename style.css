@@ -369,3 +369,8 @@ footer {
   background: #e5e7eb;
   flex-shrink: 0;
 }
+
+.knockout-actions {
+  margin-top: 18px;
+  text-align: center;
+}
